@@ -1,0 +1,324 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model account_profiles {
+  id            Int      @id @default(autoincrement())
+  account_id    Int      @unique
+  full_name     String?  @db.VarChar(255)
+  phone         String?  @db.VarChar(50)
+  address       String?  @db.Text
+  country       String?  @db.VarChar(100)
+  state         String?  @db.VarChar(100)
+  city          String?  @db.VarChar(100)
+  postal_code   String?  @db.VarChar(20)
+  profile_image String?  @db.VarChar(255)
+  accounts      accounts @relation(fields: [account_id], references: [id], onUpdate: Restrict, map: "account_profiles_ibfk_1")
+
+  @@index([account_id], map: "account_id")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model accounts {
+  id               Int                @id @default(autoincrement())
+  email            String             @unique(map: "email") @db.VarChar(255)
+  password         String             @db.VarChar(255)
+  role             String             @db.VarChar(50)
+  status           String?            @default("active") @db.VarChar(50)
+  created_at       DateTime           @default(now()) @db.Timestamp(0)
+  updated_at       DateTime           @default(now()) @db.Timestamp(0)
+  account_profiles account_profiles?
+  disputes         disputes[]
+  orders           orders[]
+  products         products[]
+  returns          returns[]
+  reviews          reviews[]
+  used_coupons     used_coupons[]
+  vendor_payouts   vendor_payouts[]
+  wishlists        wishlists[]
+  withdrawals      withdrawals[]
+}
+
+model categories {
+  id               Int          @id @default(autoincrement())
+  name             String       @db.VarChar(255)
+  description      String?      @db.Text
+  parent_id        Int?
+  created_at       DateTime     @default(now()) @db.Timestamp(0)
+  updated_at       DateTime     @default(now()) @db.Timestamp(0)
+  categories       categories?  @relation("categoriesTocategories", fields: [parent_id], references: [id], onDelete: Restrict, onUpdate: Restrict, map: "categories_ibfk_1")
+  other_categories categories[] @relation("categoriesTocategories")
+  products         products[]
+
+  @@index([parent_id], map: "parent_id")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model commission_settings {
+  id               Int       @id @default(autoincrement())
+  commission_type  String?   @db.VarChar(50)
+  commission_value Decimal?  @db.Decimal(10, 2)
+  effective_from   DateTime? @db.Timestamp(0)
+  effective_to     DateTime? @db.Timestamp(0)
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model coupons {
+  id             Int            @id @default(autoincrement())
+  code           String         @unique(map: "code") @db.VarChar(100)
+  discount_type  String?        @db.VarChar(50)
+  discount_value Decimal?       @db.Decimal(10, 2)
+  max_uses       Int?
+  expires_at     DateTime?      @db.Timestamp(0)
+  created_at     DateTime       @default(now()) @db.Timestamp(0)
+  used_coupons   used_coupons[]
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model disputes {
+  id          Int       @id @default(autoincrement())
+  order_id    Int
+  raised_by   Int
+  reason      String?   @db.Text
+  status      String?   @default("open") @db.VarChar(50)
+  resolution  String?   @db.Text
+  created_at  DateTime  @default(now()) @db.Timestamp(0)
+  resolved_at DateTime? @db.Timestamp(0)
+  orders      orders    @relation(fields: [order_id], references: [id], onUpdate: Restrict, map: "disputes_ibfk_1")
+  accounts    accounts  @relation(fields: [raised_by], references: [id], onUpdate: Restrict, map: "disputes_ibfk_2")
+
+  @@index([order_id], map: "order_id")
+  @@index([raised_by], map: "raised_by")
+}
+
+model order_items {
+  id               Int               @id @default(autoincrement())
+  order_id         Int
+  product_id       Int
+  variant_id       Int?
+  quantity         Int?
+  price            Decimal?          @db.Decimal(10, 2)
+  orders           orders            @relation(fields: [order_id], references: [id], onUpdate: Restrict, map: "order_items_ibfk_1")
+  products         products          @relation(fields: [product_id], references: [id], onUpdate: Restrict, map: "order_items_ibfk_2")
+  product_variants product_variants? @relation(fields: [variant_id], references: [id], onDelete: Restrict, onUpdate: Restrict, map: "order_items_ibfk_3")
+  returns          returns[]
+
+  @@index([order_id], map: "order_id")
+  @@index([product_id], map: "product_id")
+  @@index([variant_id], map: "variant_id")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model order_tracking {
+  id               Int      @id @default(autoincrement())
+  order_id         Int
+  status           String?  @db.VarChar(100)
+  updated_at       DateTime @default(now()) @db.Timestamp(0)
+  tracking_details String?  @db.Text
+  orders           orders   @relation(fields: [order_id], references: [id], onUpdate: Restrict, map: "order_tracking_ibfk_1")
+
+  @@index([order_id], map: "order_id")
+}
+
+model orders {
+  id              Int              @id @default(autoincrement())
+  customer_id     Int
+  total_amount    Decimal?         @db.Decimal(10, 2)
+  status          String?          @default("pending") @db.VarChar(50)
+  payment_status  String?          @default("unpaid") @db.VarChar(50)
+  shipping_status String?          @default("processing") @db.VarChar(50)
+  created_at      DateTime         @default(now()) @db.Timestamp(0)
+  updated_at      DateTime         @default(now()) @db.Timestamp(0)
+  disputes        disputes[]
+  order_items     order_items[]
+  order_tracking  order_tracking[]
+  accounts        accounts         @relation(fields: [customer_id], references: [id], onUpdate: Restrict, map: "orders_ibfk_1")
+  payments        payments[]
+  replacements    replacements[]
+  used_coupons    used_coupons[]
+  vendor_payouts  vendor_payouts[]
+
+  @@index([customer_id], map: "customer_id")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model payments {
+  id             Int       @id @default(autoincrement())
+  order_id       Int
+  payment_method String?   @db.VarChar(100)
+  payment_status String?   @default("pending") @db.VarChar(50)
+  transaction_id String?   @db.VarChar(255)
+  paid_at        DateTime? @db.Timestamp(0)
+  orders         orders    @relation(fields: [order_id], references: [id], onUpdate: Restrict, map: "payments_ibfk_1")
+  refunds        refunds[]
+
+  @@index([order_id], map: "order_id")
+}
+
+model product_images {
+  id         Int      @id @default(autoincrement())
+  product_id Int
+  image_url  String?  @db.VarChar(255)
+  alt_text   String?  @db.VarChar(255)
+  is_primary Boolean? @default(false)
+  products   products @relation(fields: [product_id], references: [id], onUpdate: Restrict, map: "product_images_ibfk_1")
+
+  @@index([product_id], map: "product_id")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model product_variants {
+  id               Int           @id @default(autoincrement())
+  product_id       Int
+  variant_name     String?       @db.VarChar(100)
+  variant_value    String?       @db.VarChar(100)
+  additional_price Decimal?      @db.Decimal(10, 2)
+  stock            Int?
+  order_items      order_items[]
+  products         products      @relation(fields: [product_id], references: [id], onUpdate: Restrict, map: "product_variants_ibfk_1")
+
+  @@index([product_id], map: "product_id")
+}
+
+model products {
+  id               Int                @id @default(autoincrement())
+  vendor_id        Int
+  category_id      Int
+  name             String?            @db.VarChar(255)
+  description      String?            @db.Text
+  price            Decimal?           @db.Decimal(10, 2)
+  stock            Int?
+  status           String?            @default("active") @db.VarChar(50)
+  created_at       DateTime           @default(now()) @db.Timestamp(0)
+  updated_at       DateTime           @default(now()) @db.Timestamp(0)
+  order_items      order_items[]
+  product_images   product_images[]
+  product_variants product_variants[]
+  accounts         accounts           @relation(fields: [vendor_id], references: [id], onUpdate: Restrict, map: "products_ibfk_1")
+  categories       categories         @relation(fields: [category_id], references: [id], onUpdate: Restrict, map: "products_ibfk_2")
+  reviews          reviews[]
+  wishlists        wishlists[]
+
+  @@index([category_id], map: "category_id")
+  @@index([vendor_id], map: "vendor_id")
+}
+
+model refunds {
+  id           Int       @id @default(autoincrement())
+  return_id    Int
+  payment_id   Int
+  amount       Decimal?  @db.Decimal(10, 2)
+  status       String?   @default("pending") @db.VarChar(50)
+  initiated_at DateTime  @default(now()) @db.Timestamp(0)
+  completed_at DateTime? @db.Timestamp(0)
+  returns      returns   @relation(fields: [return_id], references: [id], onUpdate: Restrict, map: "refunds_ibfk_1")
+  payments     payments  @relation(fields: [payment_id], references: [id], onUpdate: Restrict, map: "refunds_ibfk_2")
+
+  @@index([payment_id], map: "payment_id")
+  @@index([return_id], map: "return_id")
+}
+
+model replacements {
+  id           Int       @id @default(autoincrement())
+  return_id    Int
+  new_order_id Int
+  status       String?   @default("initiated") @db.VarChar(50)
+  initiated_at DateTime  @default(now()) @db.Timestamp(0)
+  completed_at DateTime? @db.Timestamp(0)
+  returns      returns   @relation(fields: [return_id], references: [id], onUpdate: Restrict, map: "replacements_ibfk_1")
+  orders       orders    @relation(fields: [new_order_id], references: [id], onUpdate: Restrict, map: "replacements_ibfk_2")
+
+  @@index([new_order_id], map: "new_order_id")
+  @@index([return_id], map: "return_id")
+}
+
+model returns {
+  id            Int            @id @default(autoincrement())
+  order_item_id Int
+  customer_id   Int
+  reason        String?        @db.Text
+  status        String?        @default("requested") @db.VarChar(50)
+  requested_at  DateTime       @default(now()) @db.Timestamp(0)
+  approved_at   DateTime?      @db.Timestamp(0)
+  processed_at  DateTime?      @db.Timestamp(0)
+  refunds       refunds[]
+  replacements  replacements[]
+  order_items   order_items    @relation(fields: [order_item_id], references: [id], onUpdate: Restrict, map: "returns_ibfk_1")
+  accounts      accounts       @relation(fields: [customer_id], references: [id], onUpdate: Restrict, map: "returns_ibfk_2")
+
+  @@index([customer_id], map: "customer_id")
+  @@index([order_item_id], map: "order_item_id")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model reviews {
+  id          Int      @id @default(autoincrement())
+  customer_id Int
+  product_id  Int
+  rating      Int?
+  comment     String?  @db.Text
+  created_at  DateTime @default(now()) @db.Timestamp(0)
+  accounts    accounts @relation(fields: [customer_id], references: [id], onUpdate: Restrict, map: "reviews_ibfk_1")
+  products    products @relation(fields: [product_id], references: [id], onUpdate: Restrict, map: "reviews_ibfk_2")
+
+  @@index([customer_id], map: "customer_id")
+  @@index([product_id], map: "product_id")
+}
+
+model used_coupons {
+  id          Int      @id @default(autoincrement())
+  coupon_id   Int
+  customer_id Int
+  order_id    Int
+  used_at     DateTime @default(now()) @db.Timestamp(0)
+  coupons     coupons  @relation(fields: [coupon_id], references: [id], onUpdate: Restrict, map: "used_coupons_ibfk_1")
+  accounts    accounts @relation(fields: [customer_id], references: [id], onUpdate: Restrict, map: "used_coupons_ibfk_2")
+  orders      orders   @relation(fields: [order_id], references: [id], onUpdate: Restrict, map: "used_coupons_ibfk_3")
+
+  @@index([coupon_id], map: "coupon_id")
+  @@index([customer_id], map: "customer_id")
+  @@index([order_id], map: "order_id")
+}
+
+model vendor_payouts {
+  id          Int       @id @default(autoincrement())
+  vendor_id   Int
+  order_id    Int
+  amount      Decimal?  @db.Decimal(10, 2)
+  status      String?   @default("unpaid") @db.VarChar(50)
+  payout_date DateTime? @db.Timestamp(0)
+  accounts    accounts  @relation(fields: [vendor_id], references: [id], onUpdate: Restrict, map: "vendor_payouts_ibfk_1")
+  orders      orders    @relation(fields: [order_id], references: [id], onUpdate: Restrict, map: "vendor_payouts_ibfk_2")
+
+  @@index([order_id], map: "order_id")
+  @@index([vendor_id], map: "vendor_id")
+}
+
+model wishlists {
+  id          Int      @id @default(autoincrement())
+  customer_id Int
+  product_id  Int
+  added_at    DateTime @default(now()) @db.Timestamp(0)
+  accounts    accounts @relation(fields: [customer_id], references: [id], onUpdate: Restrict, map: "wishlists_ibfk_1")
+  products    products @relation(fields: [product_id], references: [id], onUpdate: Restrict, map: "wishlists_ibfk_2")
+
+  @@index([customer_id], map: "customer_id")
+  @@index([product_id], map: "product_id")
+}
+
+model withdrawals {
+  id           Int       @id @default(autoincrement())
+  vendor_id    Int
+  amount       Decimal?  @db.Decimal(10, 2)
+  status       String?   @default("pending") @db.VarChar(50)
+  requested_at DateTime  @default(now()) @db.Timestamp(0)
+  processed_at DateTime? @db.Timestamp(0)
+  accounts     accounts  @relation(fields: [vendor_id], references: [id], onUpdate: Restrict, map: "withdrawals_ibfk_1")
+
+  @@index([vendor_id], map: "vendor_id")
+}
