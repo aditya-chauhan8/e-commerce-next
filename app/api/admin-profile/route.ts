@@ -1,6 +1,9 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { verifyToken } from "@/lib/auth";
+import path from "path";
+import fs from "fs";
+import { writeFile } from "fs/promises";
 
 
 // Handle GET request – fetch admin profile details
@@ -52,7 +55,21 @@ export async function POST(req: Request) {
         return NextResponse.json({ error: "Invalid token" }, { status: 401 });
     }
 
-    const data = await req.json();
+    const formData = await req.formData();
+
+    const full_name = formData.get("full_name") as string;
+    const phone = formData.get("phone") as string;
+    const address = formData.get('address') as string;
+    const country = formData.get('country') as string;
+    const state = formData.get('state') as string;
+    const city = formData.get('city') as string;
+    const postal_code = formData.get('postal_code') as string;
+    const file = formData.get('profile_image') as File | null;
+
+    if (!full_name || !phone || !address || !country || !state || !city || !postal_code) {
+        return NextResponse.json({ error: "All fields are required" }, { status: 400 });
+    }
+
 
     const profile = await prisma.account_profiles.findFirst({ where: { account_id: accountId } });
 
@@ -62,10 +79,29 @@ export async function POST(req: Request) {
         return NextResponse.json({ error: "Profile not found" }, { status: 400 });
     }
 
-    if (!data.full_name || !data.phone || !data.address || !data.country || !data.state || !data.city || !data.postal_code) {
-        console.log("returned from here444");
+    // if (!data.full_name || !data.phone || !data.address || !data.country || !data.state || !data.city || !data.postal_code) {
+    //     console.log("returned from here444");
 
-        return NextResponse.json({ error: "All fields are required" }, { status: 400 });
+    //     return NextResponse.json({ error: "All fields are required" }, { status: 400 });
+    // }
+
+    let imageFileName = profile.profile_image || "";
+
+
+    if (file && typeof file.name === "string") {
+        const buffer = Buffer.from(await file.arrayBuffer());
+        const uploadDir = path.join(process.cwd(), 'public', 'uploads');
+
+        // ✅ Check and create folder if not exists
+        if (!fs.existsSync(uploadDir)) {
+            fs.mkdirSync(uploadDir, { recursive: true });
+        }
+
+        const ext = file.name.split('.').pop();
+        imageFileName = `profile-${Date.now()}.${ext}`;
+        const uploadPath = path.join(uploadDir, imageFileName);
+
+        await writeFile(uploadPath, buffer);
     }
 
     console.log("no issues till here.....");
@@ -73,14 +109,14 @@ export async function POST(req: Request) {
     await prisma.account_profiles.update({
         where: { id: profile.id },
         data: {
-            full_name: data.full_name,
-            phone: data.phone,
-            address: data.address,
-            country: data.country,
-            state: data.state,
-            city: data.city,
-            postal_code: data.postal_code,
-            profile_image: data.profile_image,
+            full_name,
+            phone,
+            address,
+            country,
+            state,
+            city,
+            postal_code,
+            profile_image: imageFileName,
         },
     });
 

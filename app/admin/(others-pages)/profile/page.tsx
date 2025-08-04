@@ -29,9 +29,10 @@ export default function Profile() {
     profile_image: "",
   });
 
-  const [imageFile, setImageFile] = useState(null);
+  const [imageFile, setImageFile] = useState<File | null>(null);
   const [profile, setProfile] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+   const [imagePreview, setImagePreview] = useState<string>("");
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -56,24 +57,38 @@ export default function Profile() {
 
   const handleImageChange = (e: any) => {
     const file = e.target.files[0];
+    if (!file) return;
     setImageFile(file);
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      setForm((prev) => ({
-        ...prev,
-        profile_image: typeof reader.result === "string" ? reader.result : "",
-      }));
-    };
-    if (file) reader.readAsDataURL(file);
+    setForm((prev) => ({ ...prev, profile_image: file.name }));
+    setImagePreview(URL.createObjectURL(file));
+    // const reader = new FileReader();
+    // reader.onloadend = () => {
+    //   setForm((prev) => ({
+    //     ...prev,
+    //     profile_image: typeof reader.result === "string" ? reader.result : "",
+    //   }));
+    // };
+    // if (file) reader.readAsDataURL(file);
   };
 
   const handleSave = async (e: React.FormEvent<HTMLFormElement>) => {
     e?.preventDefault();
     try {
+
+      const formData = new FormData();
+      formData.append("full_name", form.full_name);
+      formData.append("phone", form.phone);
+      formData.append("address", form.address);
+      formData.append("country", form.country);
+      formData.append("state", form.state);
+      formData.append("city", form.city);
+      formData.append("postal_code", form.postal_code);
+      if (imageFile) formData.append("profile_image", imageFile);
+
       const res = await fetch("/api/admin-profile", {
         method: "POST",
-        body: JSON.stringify(form),
-        headers: { "Content-Type": "application/json" },
+        body: formData,
+        // headers: { "Content-Type": "application/json" },
       });
       const data = await res.json()
       if (res.ok) {
@@ -119,7 +134,7 @@ export default function Profile() {
           </button>
         </div>
         <div className="space-y-6">
-          <UserMetaCard />
+          <UserMetaCard profiledata={profile} />
           <UserInfoCard />
           <UserAddressCard />
         </div>
@@ -202,13 +217,21 @@ export default function Profile() {
 
                   <div className="col-span-2 lg:col-span-1">
                     <Label>Profile Image</Label>
-                    <Input type="file"
+                    {/* <Input type="file"
                       name="profile_image"
                       accept="image/*"
                       onChange={handleImageChange} />
                     {form.profile_image && (
                       <img
-                        src={form.profile_image}
+                        src={form.profile_image.startsWith("data") ? form.profile_image : `/uploads/${form.profile_image}`}
+                        alt="Profile Preview"
+                        className="mt-2 w-20 h-20 rounded-full object-cover"
+                      />
+                    )} */}
+                    <Input type="file" name="profile_image" accept="image/*" onChange={handleImageChange} />
+                    {imagePreview && (
+                      <img
+                        src={imagePreview}
                         alt="Profile Preview"
                         className="mt-2 w-20 h-20 rounded-full object-cover"
                       />
