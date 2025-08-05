@@ -54,7 +54,7 @@ main()
 //  matyfuva@mailinator.com
 
 // vendor -:
-// tydetixety @mailinator.com
+// tydetixety@mailinator.com
 
 // admin -:
-// fidimahyn @mailinator.com
+// fidimahyn@mailinator.com

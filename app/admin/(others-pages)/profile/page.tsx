@@ -32,7 +32,7 @@ export default function Profile() {
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [profile, setProfile] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-   const [imagePreview, setImagePreview] = useState<string>("");
+  const [imagePreview, setImagePreview] = useState<string>("");
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -135,8 +135,8 @@ export default function Profile() {
         </div>
         <div className="space-y-6">
           <UserMetaCard profiledata={profile} />
-          <UserInfoCard />
-          <UserAddressCard />
+          <UserInfoCard profiledata={profile} />
+          <UserAddressCard profiledata={profile} />
         </div>
       </div>
       <Modal isOpen={isOpen} onClose={() => setIsOpen(false)} className="max-w-[700px] m-4">
