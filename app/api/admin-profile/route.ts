@@ -25,13 +25,25 @@ export async function GET(req: Request) {
 
     const profile = await prisma.account_profiles.findFirst({
         where: { account_id: accountId },
+        include: {
+            accounts: {
+                select: {
+                    email: true,
+                    role: true,
+                },
+            },
+        },
     });
 
     if (!profile) {
         return NextResponse.json({ error: "Profile not found" }, { status: 404 });
     }
 
-    return NextResponse.json(profile);
+    return NextResponse.json({
+        ...profile,
+        email: profile.accounts?.email,
+        role: profile.accounts?.role,
+    });
 }
 
 // Handle POST request – update admin profile
