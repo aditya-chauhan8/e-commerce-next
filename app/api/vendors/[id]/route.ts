@@ -4,10 +4,13 @@ import prisma from "@/lib/prisma";
 
 // Update Vendor
 
-export async function PUT(req: Response, { params }: { params: { id: string } }) {
+export async function PUT(req: Request, { params }: { params: { id: string } }) {
     const id = parseInt(params.id);
     const data = await req.json();
-
+    const allowedStatuses = ['active', 'inactive', 'banned'];
+    if (!allowedStatuses.includes(data.status)) {
+        return NextResponse.json({ error: "Invalid status value" }, { status: 400 });
+    }
 
     try {
         await prisma.accounts.update({

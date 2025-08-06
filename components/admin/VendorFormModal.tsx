@@ -17,6 +17,7 @@ export default function VendorFormModal({ isOpen, onClose, onSubmit, initialData
         city: '',
         postal_code: '',
         profile_image: '',
+        status: 'active',
     });
 
     useEffect(() => {
@@ -90,11 +91,25 @@ export default function VendorFormModal({ isOpen, onClose, onSubmit, initialData
                         <Label>Postal Code</Label>
                         <Input name="postal_code" value={form.postal_code} onChange={handleChange} />
                     </div>
+                    <div className="relative">
+                        <Label>Status</Label>
+                        <select
+                            name="status"
+                            value={form.status}
+                            onChange={handleChange}
+                            className={`h-11 w-full rounded-lg border appearance-none px-4 py-2.5 text-sm shadow-theme-xs text-gray-800 border-gray-300 bg-transparent focus:outline-hidden focus:ring-3 focus:border-brand-300 focus:ring-brand-500/10 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:border-gray-700 dark:focus:border-brand-800`}
+                        >
+                            <option value="active">Active</option>
+                            <option value="inactive">Inactive</option>
+                            <option value="banned">Banned</option>
+                        </select>
+                    </div>
+
+
                     <div>
                         <Label>Profile Image</Label>
                         <Input type="file" accept="image/*" onChange={handleImageChange} />
                     </div>
-
                     <div className="col-span-2 flex justify-end gap-3 mt-6">
                         <Button variant="outline" type="button" onClick={onClose}>
                             Cancel
