@@ -71,7 +71,17 @@ const navItems: NavItem[] = [
     name: "Vendors",
     path: "/admin/vendors",
   },
-
+  {
+    icon: (<Image
+      src={UserCircleIcon}
+      alt="Vendors"
+      width={20}
+      height={20}
+      className="menu-icon"
+    />),
+    name: "Buyers",
+    path: "/admin/buyers",
+  },
   {
     name: "Forms",
     icon: (<Image
