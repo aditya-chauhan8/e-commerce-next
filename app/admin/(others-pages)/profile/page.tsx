@@ -34,17 +34,38 @@ export default function Profile() {
   const [loading, setLoading] = useState(true);
   const [imagePreview, setImagePreview] = useState<string>("");
 
-  useEffect(() => {
-    const fetchProfile = async () => {
-      const res = await fetch("/api/admin-profile");
-      const data = await res.json();
-      if (res.ok) {
-        setProfile(data);
+  const fetchProfile = async () => {
+    const res = await fetch("/api/admin");
+    const data = await res.json();
+    if (res.ok) {
+      setProfile(data);
+      // Setting form data
+      if (data) {
+        setForm({
+          full_name: data?.full_name || "",
+          phone: data?.phone || "",
+          address: data?.address || "",
+          country: data?.country || "",
+          state: data?.state || "",
+          city: data?.city || "",
+          postal_code: data?.postal_code || "",
+          profile_image: data?.profile_image || "",
+        });
+
+        if (data?.profile_image) {
+          setImagePreview(`/uploads/${data?.profile_image}`);
+        }
       } else {
         console.error(data.error);
       }
-      setLoading(false);
-    };
+
+
+    } else {
+      console.error(data.error);
+    }
+    setLoading(false);
+  };
+  useEffect(() => {
 
     fetchProfile();
   }, []);
@@ -54,6 +75,8 @@ export default function Profile() {
   const handleChange = (e: any) => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
+
+
 
   const handleImageChange = (e: any) => {
     const file = e.target.files[0];
@@ -85,7 +108,7 @@ export default function Profile() {
       formData.append("postal_code", form.postal_code);
       if (imageFile) formData.append("profile_image", imageFile);
 
-      const res = await fetch("/api/admin-profile", {
+      const res = await fetch("/api/admin", {
         method: "POST",
         body: formData,
         // headers: { "Content-Type": "application/json" },
@@ -93,7 +116,7 @@ export default function Profile() {
       const data = await res.json()
       if (res.ok) {
         setIsOpen(false);
-
+        fetchProfile();
       } else {
         alert(data.error || "Failed to update profile.");
       }
@@ -102,6 +125,8 @@ export default function Profile() {
     }
     // setIsOpen(false);
   };
+
+  console.log("Form Data:", form);
 
   return (
     <div>

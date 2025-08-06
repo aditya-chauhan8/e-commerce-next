@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { verifyToken } from "@/lib/auth";
 
-// GET all vendors
+// GET all buyers
 export async function GET(req: Request) {
     const cookie = req.headers.get("cookie");
     const token = cookie?.split(";").find((c) => c.trim().startsWith("token="))?.split("=")[1];
